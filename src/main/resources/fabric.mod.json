@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "testingcustomhandshake",
+  "version": "${version}",
+  "name": "TestingCustomHandshake",
+  "description": "",
+  "authors": [],
+  "contact": {
+    "repo": "https://github.com/DiffuseHyperion/TestingCustomHandshake"
+  },
+  "license": "All-Rights-Reserved",
+  "icon": "assets/testingcustomhandshake/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "client": [
+      "me.diffusehyperion.testingcustomhandshake.client.TestingCustomHandshakeClient"
+    ],
+    "server": [
+      "me.diffusehyperion.testingcustomhandshake.server.TestingCustomHandshakeServer"
+    ]
+  },
+  "mixins": [
+    "testingcustomhandshake.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
