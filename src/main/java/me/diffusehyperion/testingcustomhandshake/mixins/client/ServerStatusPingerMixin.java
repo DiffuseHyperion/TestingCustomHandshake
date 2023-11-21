@@ -16,6 +16,9 @@ import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.status.*;
+import org.slf4j.Logger;
+import org.spongepowered.asm.mixin.Debug;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -30,6 +33,7 @@ import java.util.List;
 
 import static me.diffusehyperion.testingcustomhandshake.TestingCustomHandshake.MODLOGGER;
 
+@Debug(export = true)
 @Mixin(ServerStatusPinger.class)
 public class ServerStatusPingerMixin {
 
@@ -38,6 +42,8 @@ public class ServerStatusPingerMixin {
 
     @Shadow
     void pingLegacyServer(InetSocketAddress inetSocketAddress, final ServerAddress serverAddress, final ServerData serverData) {}
+
+    @Shadow @Final private static Logger LOGGER;
 
     // just a bit scuffed
     // mixinextras is a lifesaver
@@ -72,6 +78,7 @@ public class ServerStatusPingerMixin {
             private long pingStart;
 
             public void handleStatusResponse(ClientboundStatusResponsePacket clientboundStatusResponsePacket) {
+                MODLOGGER.info("Received vanilla response packet");
                 if (this.receivedPing) {
                     connection.disconnect(Component.translatable("multiplayer.status.unrequested"));
                 } else {
@@ -142,6 +149,7 @@ public class ServerStatusPingerMixin {
             }
         };
         ((ConnectionMixinInterface) connection).testingCustomHandshake$initiateServerboundUpgradedStatusConnection(host, port, listener);
+        LOGGER.info("Sending upgraded request packet");
         connection.send(new ServerboundUpgradedStatusRequestPacket());
     }
 }

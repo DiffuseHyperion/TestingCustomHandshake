@@ -4,10 +4,13 @@ import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.status.*;
 
+import static me.diffusehyperion.testingcustomhandshake.TestingCustomHandshake.MODLOGGER;
+
 public class ServerUpgradedStatusPacketListenerImpl implements ServerUpgradedStatusPacketListener {
 
     @Override
     public void handleUpgradedStatusResponse(ServerboundUpgradedStatusRequestPacket serverboundUpgradedStatusRequestPacket) {
+        MODLOGGER.info("Received upgraded request packet, sending upgraded response packet");
         this.connection.send(new ClientboundUpgradedStatusResponsePacket());
     }
 
@@ -29,6 +32,7 @@ public class ServerUpgradedStatusPacketListenerImpl implements ServerUpgradedSta
     }
 
     public void handleStatusRequest(ServerboundStatusRequestPacket serverboundStatusRequestPacket) {
+        MODLOGGER.info("Received vanilla request packet, sending vanilla response packet");
         if (this.hasRequestedStatus) {
             this.connection.disconnect(DISCONNECT_REASON);
         } else {
