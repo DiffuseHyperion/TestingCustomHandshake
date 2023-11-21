@@ -4,9 +4,9 @@ import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.Share;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import com.mojang.authlib.GameProfile;
+import me.diffusehyperion.testingcustomhandshake.client.interfaces.ConnectionMixinInterface;
 import me.diffusehyperion.testingcustomhandshake.packets.ClientUpgradedStatusPacketListener;
 import me.diffusehyperion.testingcustomhandshake.packets.ClientboundUpgradedStatusResponsePacket;
-import me.diffusehyperion.testingcustomhandshake.client.interfaces.ConnectionMixinInterface;
 import me.diffusehyperion.testingcustomhandshake.packets.ServerboundUpgradedStatusRequestPacket;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
@@ -16,9 +16,7 @@ import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.status.*;
-import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Debug;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -42,8 +40,6 @@ public class ServerStatusPingerMixin {
 
     @Shadow
     void pingLegacyServer(InetSocketAddress inetSocketAddress, final ServerAddress serverAddress, final ServerData serverData) {}
-
-    @Shadow @Final private static Logger LOGGER;
 
     // just a bit scuffed
     // mixinextras is a lifesaver
@@ -70,7 +66,7 @@ public class ServerStatusPingerMixin {
         ClientUpgradedStatusPacketListener listener = new ClientUpgradedStatusPacketListener() {
             @Override
             public void handleUpgradedStatusResponse(ClientboundUpgradedStatusResponsePacket var1) {
-                MODLOGGER.info("we actually did it");
+                MODLOGGER.info("Received upgraded response packet from " + serverAddress.getHost() + ":" + serverAddress.getPort());
             }
 
             private boolean success;
@@ -78,7 +74,7 @@ public class ServerStatusPingerMixin {
             private long pingStart;
 
             public void handleStatusResponse(ClientboundStatusResponsePacket clientboundStatusResponsePacket) {
-                MODLOGGER.info("Received vanilla response packet");
+                MODLOGGER.info("Received vanilla response packet from " + serverAddress.getHost() + ":" + serverAddress.getPort());
                 if (this.receivedPing) {
                     connection.disconnect(Component.translatable("multiplayer.status.unrequested"));
                 } else {
@@ -111,9 +107,7 @@ public class ServerStatusPingerMixin {
                             serverData.playerList = List.of();
                         }
 
-                    }, () -> {
-                        serverData.status = Component.translatable("multiplayer.status.unknown").withStyle(ChatFormatting.DARK_GRAY);
-                    });
+                    }, () -> serverData.status = Component.translatable("multiplayer.status.unknown").withStyle(ChatFormatting.DARK_GRAY));
                     serverStatus.favicon().ifPresent((favicon) -> {
                         if (!Arrays.equals(favicon.iconBytes(), serverData.getIconBytes())) {
                             serverData.setIconBytes(ServerData.validateIcon(favicon.iconBytes()));
@@ -149,7 +143,7 @@ public class ServerStatusPingerMixin {
             }
         };
         ((ConnectionMixinInterface) connection).testingCustomHandshake$initiateServerboundUpgradedStatusConnection(host, port, listener);
-        LOGGER.info("Sending upgraded request packet");
+        MODLOGGER.info("Sending upgraded request packet to " + serverAddress.getHost() + ":" + serverAddress.getPort());
         connection.send(new ServerboundUpgradedStatusRequestPacket());
     }
 }
