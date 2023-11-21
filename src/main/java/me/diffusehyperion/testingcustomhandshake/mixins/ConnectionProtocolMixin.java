@@ -24,7 +24,7 @@ public class ConnectionProtocolMixin {
     @ModifyArg(method = "<clinit>",
     at = @At(value = "INVOKE",
             target = "Lnet/minecraft/network/ConnectionProtocol$ProtocolBuilder;addFlow(Lnet/minecraft/network/protocol/PacketFlow;Lnet/minecraft/network/ConnectionProtocol$PacketSet;)Lnet/minecraft/network/ConnectionProtocol$ProtocolBuilder;",
-            ordinal = 0 ), // clientbound
+            ordinal = 0 ), // serverbound
     index = 1,
     slice = @Slice(
             from = @At(value = "CONSTANT",
@@ -32,22 +32,22 @@ public class ConnectionProtocolMixin {
             )
     ))
     private static ConnectionProtocol.PacketSet registerServerbound(ConnectionProtocol.PacketSet packetSet) {
-        packetSet.addPacket(ClientboundUpgradedStatusResponsePacket.class, o -> new ClientboundUpgradedStatusResponsePacket((FriendlyByteBuf) o));
+        packetSet.addPacket(ServerboundUpgradedStatusRequestPacket.class, o -> new ServerboundUpgradedStatusRequestPacket((FriendlyByteBuf) o));
         return packetSet;
     }
 
     @ModifyArg(method = "<clinit>",
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/network/ConnectionProtocol$ProtocolBuilder;addFlow(Lnet/minecraft/network/protocol/PacketFlow;Lnet/minecraft/network/ConnectionProtocol$PacketSet;)Lnet/minecraft/network/ConnectionProtocol$ProtocolBuilder;",
-                    ordinal = 1 ), // serveround
+                    ordinal = 1 ), // clientbound
             index = 1,
             slice = @Slice(
                     from = @At(value = "CONSTANT",
                             args = "stringValue=status"
                     )
             ))
-    private static ConnectionProtocol.PacketSet initServerbound(ConnectionProtocol.PacketSet packetSet) {
-        packetSet.addPacket(ServerboundUpgradedStatusRequestPacket.class, o -> new ServerboundUpgradedStatusRequestPacket((FriendlyByteBuf) o));
+    private static ConnectionProtocol.PacketSet registerClientbound(ConnectionProtocol.PacketSet packetSet) {
+        packetSet.addPacket(ClientboundUpgradedStatusResponsePacket.class, o -> new ClientboundUpgradedStatusResponsePacket((FriendlyByteBuf) o));
         return packetSet;
     }
 }
