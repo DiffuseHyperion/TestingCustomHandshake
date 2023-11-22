@@ -4,7 +4,8 @@
   "package": "me.diffusehyperion.testingcustomhandshake.mixins",
   "compatibilityLevel": "JAVA_17",
   "server": [
-    "server.ServerHandshakePacketListenerImpl"
+    "server.ServerHandshakePacketListenerImpl",
+    "server.ServerConnectionListenerMixin"
   ],
   "client": [
     "client.ConnectionMixin",

@@ -4,6 +4,7 @@ import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.Share;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import com.mojang.authlib.GameProfile;
+import me.diffusehyperion.testingcustomhandshake.client.TestingCustomHandshakeClient;
 import me.diffusehyperion.testingcustomhandshake.client.interfaces.ConnectionMixinInterface;
 import me.diffusehyperion.testingcustomhandshake.packets.ClientUpgradedStatusPacketListener;
 import me.diffusehyperion.testingcustomhandshake.packets.ClientboundUpgradedStatusResponsePacket;
@@ -16,9 +17,9 @@ import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.status.*;
-import org.spongepowered.asm.mixin.Debug;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -31,10 +32,8 @@ import java.util.List;
 
 import static me.diffusehyperion.testingcustomhandshake.TestingCustomHandshake.MODLOGGER;
 
-@Debug(export = true)
 @Mixin(ServerStatusPinger.class)
 public class ServerStatusPingerMixin {
-
     @Shadow
     void onPingFailed(Component component, ServerData serverData) {}
 
@@ -63,10 +62,15 @@ public class ServerStatusPingerMixin {
             @Local ServerAddress serverAddress) {
         ServerData serverData = serverDataLocalRef.get();
         Runnable runnable = runnableLocalRef.get();
+
+        Runnable disconnectRunnable = () -> disconnect(connection);
+
         ClientUpgradedStatusPacketListener listener = new ClientUpgradedStatusPacketListener() {
             @Override
             public void handleUpgradedStatusResponse(ClientboundUpgradedStatusResponsePacket var1) {
-                MODLOGGER.info("Received upgraded response packet from " + serverAddress.getHost() + ":" + serverAddress.getPort());
+                MODLOGGER.info("!!! Received upgraded response packet from " + serverAddress.getHost() + ":" + serverAddress.getPort());
+                TestingCustomHandshakeClient.clientScheduler.cancelTask(disconnectRunnable);
+                disconnect(connection);
             }
 
             private boolean success;
@@ -126,7 +130,10 @@ public class ServerStatusPingerMixin {
                 long l = this.pingStart;
                 long m = Util.getMillis();
                 serverData.ping = m - l;
-                connection.disconnect(Component.translatable("multiplayer.status.finished"));
+                MODLOGGER.info("Sending upgraded request packet to " + serverAddress.getHost() + ":" + serverAddress.getPort());
+                connection.send(new ServerboundUpgradedStatusRequestPacket());
+
+                TestingCustomHandshakeClient.clientScheduler.addTask((int) (((serverData.ping / 2) / 50) + 20), disconnectRunnable);
             }
 
             @Override
@@ -143,7 +150,17 @@ public class ServerStatusPingerMixin {
             }
         };
         ((ConnectionMixinInterface) connection).testingCustomHandshake$initiateServerboundUpgradedStatusConnection(host, port, listener);
-        MODLOGGER.info("Sending upgraded request packet to " + serverAddress.getHost() + ":" + serverAddress.getPort());
-        connection.send(new ServerboundUpgradedStatusRequestPacket());
+    }
+
+
+    @Unique
+    private void disconnect(Connection connection) {
+        connection.disconnect(Component.translatable("multiplayer.status.finished"));
+    }
+
+    @Inject(method = "tick",
+    at = @At(value = "HEAD"))
+    private void tick(CallbackInfo ci) {
+        TestingCustomHandshakeClient.clientScheduler.tick();
     }
 }
